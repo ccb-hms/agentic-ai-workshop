@@ -14,13 +14,13 @@ The workshop runs in two halves, roughly 45 minutes each.
 | | Session | Presenters |
 |---|---|---|
 | **1** | **Concepts & framework** — slide presentation | Grey Kuling, Anthony Christidis |
-| **2** | **Live demo** — reproducing the statistical analysis of a published paper with an agentic workflow | Alex Pickering |
+| **2** | **Demo** — reproducing the statistical analysis of a published paper with an agentic workflow | Alex Pickering |
 
 ## Repository layout
 
 ```
 slides/   Agentic-AI-slides.pdf   — the presentation
-demo/     the live demo materials
+demo/     the demo materials
 ```
 
 ---
