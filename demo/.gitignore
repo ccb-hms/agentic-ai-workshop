@@ -1,0 +1,19 @@
+# Cached GWAS cis-window extracts + LD panel (fetch via src/download.R)
+data/
+
+# Analysis outputs — everything run_phase*.R regenerates
+results/*
+# ...except the hand-written endpoint mapping, which no script writes
+!results/endpoints.md
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+renv/library/
+
+# OpenGWAS token (secret)
+.Renviron
+
+# macOS
+.DS_Store

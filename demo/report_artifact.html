@@ -1,0 +1,552 @@
+<style>
+  :root{
+    color-scheme: light;
+    --plane:#e9eef0; --card:#ffffff; --card-2:#f4f7f8;
+    --ink:#101a1c; --ink-2:#4e5a5f; --muted:#8a959a;
+    --accent:#0b6e6e; --accent-soft:#0b6e6e1a;
+    --hair:rgba(16,26,28,.12); --hair-2:rgba(16,26,28,.06);
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+    --grid:#e4e8e9; --ref:#8a959a; --good:#0ca30c;
+    --shadow:0 1px 2px rgba(16,26,28,.05), 0 8px 30px rgba(16,26,28,.06);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --measure:44rem;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      color-scheme: dark;
+      --plane:#0c0f10; --card:#14191b; --card-2:#1a2123;
+      --ink:#f3f6f7; --ink-2:#aeb9be; --muted:#808b90;
+      --accent:#3fb6ad; --accent-soft:#3fb6ad1f;
+      --hair:rgba(255,255,255,.12); --hair-2:rgba(255,255,255,.06);
+      --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+      --grid:#242b2d; --ref:#808b90; --good:#0ca30c;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 34px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --plane:#0c0f10; --card:#14191b; --card-2:#1a2123;
+    --ink:#f3f6f7; --ink-2:#aeb9be; --muted:#808b90;
+    --accent:#3fb6ad; --accent-soft:#3fb6ad1f;
+    --hair:rgba(255,255,255,.12); --hair-2:rgba(255,255,255,.06);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --grid:#242b2d; --ref:#808b90; --good:#0ca30c;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 34px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--plane);color:var(--ink);font-family:var(--sans);
+    font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:var(--measure);margin:0 auto;padding:0 1.5rem;}
+  .bleed{max-width:60rem;margin:0 auto;padding:0 1.5rem;}
+
+  /* top bar */
+  .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(1.2) blur(10px);
+    background:color-mix(in srgb, var(--plane) 82%, transparent);
+    border-bottom:1px solid var(--hair);}
+  .bar .row{max-width:60rem;margin:0 auto;padding:.6rem 1.5rem;display:flex;align-items:center;gap:1rem;}
+  .brand{font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-2);display:flex;align-items:center;gap:.55rem;}
+  .brand b{color:var(--ink);font-weight:600;letter-spacing:.04em}
+  .dot{width:.5rem;height:.5rem;border-radius:50%;background:var(--accent)}
+  .bar .sp{flex:1}
+  .tgl{border:1px solid var(--hair);background:var(--card);color:var(--ink-2);
+    font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;padding:.4rem .7rem;border-radius:.5rem;
+    cursor:pointer;display:inline-flex;gap:.45rem;align-items:center}
+  .tgl:hover{color:var(--ink);border-color:var(--accent)}
+  .tgl:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* hero */
+  .hero{padding:5rem 0 2.5rem}
+  .eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 1.1rem}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2.2rem,5.2vw,3.5rem);line-height:1.06;
+    letter-spacing:-.01em;margin:0 0 1.1rem;text-wrap:balance}
+  .deck{font-size:1.2rem;color:var(--ink-2);max-width:38rem;margin:0 0 .4rem;text-wrap:pretty}
+  .prov{font-family:var(--mono);font-size:.78rem;color:var(--muted);margin-top:1.4rem;line-height:1.7}
+  .prov a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+
+  /* tiles */
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:2.4rem auto 0;max-width:60rem;padding:0 1.5rem}
+  .tile{background:var(--card);border:1px solid var(--hair);border-radius:.9rem;padding:1.15rem 1.25rem;box-shadow:var(--shadow)}
+  .tile .k{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .tile .v{font-family:var(--serif);font-size:1.5rem;line-height:1.15;margin-top:.5rem;font-weight:600}
+  .tile .s{font-size:.86rem;color:var(--ink-2);margin-top:.25rem}
+  .pass{color:var(--good);display:inline-flex;align-items:center;gap:.4rem}
+  .pass svg{width:1rem;height:1rem}
+  @media(max-width:640px){.tiles{grid-template-columns:1fr}}
+
+  /* sections */
+  section{padding:2.6rem 0}
+  .kicker{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 .7rem}
+  h2{font-family:var(--serif);font-weight:600;font-size:clamp(1.55rem,3.2vw,2.1rem);line-height:1.12;margin:0 0 1rem;letter-spacing:-.01em;text-wrap:balance}
+  h3{font-family:var(--sans);font-weight:650;font-size:1.05rem;margin:1.8rem 0 .5rem;letter-spacing:.01em}
+  p{margin:0 0 1.05rem;text-wrap:pretty}
+  .lede{font-size:1.12rem}
+  strong{font-weight:650}
+  em{font-style:italic}
+  .rule{height:1px;background:var(--hair);border:0;margin:0}
+  .def{background:var(--card-2);border-left:2px solid var(--accent);padding:.15rem .9rem;border-radius:0 .5rem .5rem 0}
+
+  /* 1 vs 2 sample cards */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.6rem 0}
+  .duo .cardx{background:var(--card);border:1px solid var(--hair);border-radius:.9rem;padding:1.3rem;box-shadow:var(--shadow)}
+  .duo .cardx.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft),var(--shadow)}
+  .duo h4{margin:.1rem 0 .1rem;font-family:var(--sans);font-size:1rem}
+  .duo .tag{font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border-radius:.4rem;background:var(--card-2);color:var(--ink-2)}
+  .duo .tag.no{color:#d03b3b}.duo .tag.yes{color:var(--good)}
+  .duo ul{margin:.8rem 0 0;padding-left:1.05rem}
+  .duo li{margin:.35rem 0;font-size:.95rem;color:var(--ink-2)}
+  @media(max-width:640px){.duo{grid-template-columns:1fr}}
+
+  /* pipeline */
+  .pipe{display:flex;align-items:stretch;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0 .4rem}
+  .step{flex:1 1 0;min-width:8.5rem;background:var(--card);border:1px solid var(--hair);border-radius:.75rem;padding:.85rem .95rem}
+  .step .n{font-family:var(--mono);font-size:.65rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+  .step .t{font-weight:650;font-size:.95rem;margin-top:.2rem}
+  .step .d{font-size:.85rem;color:var(--ink-2);margin-top:.15rem}
+  .arrow{display:flex;align-items:center;color:var(--muted);font-size:1.1rem}
+  @media(max-width:640px){.arrow{display:none}.step{flex-basis:100%}}
+
+  /* figure */
+  .fig{background:var(--card);border:1px solid var(--hair);border-radius:1rem;box-shadow:var(--shadow);
+    padding:1.4rem 1.4rem 1.1rem;margin:1.6rem 0}
+  .fig-h{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:baseline;justify-content:space-between;margin-bottom:.2rem}
+  .fig-t{font-weight:650;font-size:1.02rem}
+  .fig-u{font-family:var(--mono);font-size:.72rem;color:var(--muted);letter-spacing:.03em}
+  .legend{display:flex;flex-wrap:wrap;gap:.9rem;margin:.7rem 0 1rem}
+  .lg{display:inline-flex;align-items:center;gap:.45rem;font-size:.85rem;color:var(--ink-2)}
+  .sw{width:.85rem;height:.85rem;border-radius:50%;flex:none}
+  .panels{display:grid;grid-template-columns:1fr 1fr;gap:.6rem 1.4rem}
+  .panels.one{grid-template-columns:minmax(0,640px);justify-content:center}
+  @media(max-width:720px){.panels{grid-template-columns:1fr}}
+  .panel .pt{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin:.2rem 0 .1rem;text-align:center}
+  .panel svg{width:100%;height:auto;display:block}
+  .fig-cap{font-size:.88rem;color:var(--ink-2);margin:.9rem 0 0;padding-top:.9rem;border-top:1px solid var(--hair-2)}
+  .fig-tools{display:flex;gap:.5rem;margin-top:.6rem}
+  .mini{font-family:var(--mono);font-size:.68rem;letter-spacing:.04em;padding:.3rem .6rem;border-radius:.45rem;border:1px solid var(--hair);background:transparent;color:var(--ink-2);cursor:pointer}
+  .mini:hover{color:var(--ink);border-color:var(--accent)}
+  .mini[aria-pressed="true"]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+
+  /* tables */
+  .tblwrap{overflow-x:auto;margin-top:.9rem}
+  table{border-collapse:collapse;width:100%;font-size:.85rem;font-variant-numeric:tabular-nums}
+  caption{caption-side:top;text-align:left;font-size:.85rem;color:var(--ink-2);margin-bottom:.5rem}
+  th,td{text-align:right;padding:.4rem .7rem;border-bottom:1px solid var(--hair-2);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font-family:var(--mono);font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  tbody tr:hover{background:var(--card-2)}
+  td .g{color:var(--good)}
+  .hidden{display:none}
+
+  /* callout */
+  .call{display:flex;gap:.9rem;background:var(--card);border:1px solid var(--hair);border-left:3px solid var(--good);
+    border-radius:.7rem;padding:1rem 1.2rem;margin:1.4rem 0;align-items:flex-start}
+  .call.warn{border-left-color:#eb6834}
+  .call svg{width:1.3rem;height:1.3rem;flex:none;margin-top:.15rem}
+  .call .ct{font-size:.96rem}
+  .call b{font-weight:650}
+
+  /* checks grid */
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.4rem 0}
+  .chk{background:var(--card);border:1px solid var(--hair);border-radius:.8rem;padding:1.05rem 1.15rem}
+  .chk .h{display:flex;align-items:center;gap:.5rem;font-weight:650;font-size:.98rem}
+  .chk .h svg{width:1rem;height:1rem;color:var(--good);flex:none}
+  .chk p{font-size:.9rem;color:var(--ink-2);margin:.5rem 0 0}
+  @media(max-width:640px){.checks{grid-template-columns:1fr}}
+
+  .tooltip{position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .1s;
+    background:var(--ink);color:var(--plane);font-family:var(--mono);font-size:.74rem;line-height:1.5;
+    padding:.5rem .65rem;border-radius:.5rem;box-shadow:var(--shadow);max-width:16rem}
+  .tooltip .tg{font-weight:700;color:var(--card)}
+  :root[data-theme="dark"] .tooltip,
+  :root:where(:not([data-theme="light"])) .tooltip{background:#e9edee;color:#0c0f10}
+
+  ul.dev{list-style:none;padding:0;margin:1.2rem 0}
+  ul.dev li{padding:.6rem 0 .6rem 1.6rem;border-bottom:1px solid var(--hair-2);position:relative;color:var(--ink-2);font-size:.96rem}
+  ul.dev li:before{content:"→";position:absolute;left:.2rem;color:var(--accent)}
+  ul.dev b{color:var(--ink)}
+
+  footer{border-top:1px solid var(--hair);margin-top:2rem;padding:2.4rem 0 3.4rem}
+  footer .prov{margin-top:.4rem}
+
+  @media (prefers-reduced-motion:no-preference){
+    .hero{animation:rise .7s ease both}
+    @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  }
+  a{color:var(--accent)}
+</style>
+
+<div class="bar"><div class="row">
+  <span class="brand"><span class="dot"></span> <b>Lipid targets → dementia</b> · two-sample MR</span>
+  <span class="sp"></span>
+  <button class="tgl" id="themeBtn" aria-label="Toggle color theme"><span id="themeIco">◐</span> <span id="themeTxt">Theme</span></button>
+</div></div>
+
+<header class="hero reveal">
+  <div class="wrap">
+    <p class="eyebrow">Genetic epidemiology · reproduction study</p>
+    <h1>Do cholesterol-lowering drug targets lower the risk of dementia?</h1>
+    <p class="deck">Reproducing the two-sample Mendelian-randomization arm of Nordestgaard&nbsp;et&nbsp;al. (2025) from public data alone — <strong>GLGC</strong> lipid genetics as the exposure, <strong>FinnGen</strong> dementia &amp; heart-disease as the outcome.</p>
+    <p class="prov">Six drug targets · HMGCR · NPC1L1 · PCSK9 · ANGPTL4 · LPL · CETP<br>
+      Effects per <b>1&nbsp;SD lower non-HDL cholesterol</b> · <a href="plan.md">plan.md</a> · <a href="research.md">research.md</a></p>
+  </div>
+</header>
+
+<div class="tiles reveal">
+  <div class="tile"><div class="k">Method</div><div class="v">Two-sample MR</div><div class="s">GLGC × FinnGen, summary data only</div></div>
+  <div class="tile"><div class="k">Positive control</div><div class="v"><span class="pass"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 10.5l4 4 8-9"/></svg>PASS</span></div><div class="s">IHD protective for all 4 anti-atherogenic targets</div></div>
+  <div class="tile"><div class="k">Concordance</div><div class="v">6 / 6 targets</div><div class="s">match the paper's own 2SMR direction</div></div>
+</div>
+
+<main>
+  <section class="bleed reveal">
+    <div class="wrap" style="padding:0">
+      <p class="kicker">The paper's headline · not our result</p>
+      <h2>The claim that makes this paper exciting</h2>
+      <p>Genetically lower non-HDL cholesterol acting through <strong>HMGCR</strong> (the statin target), <strong>NPC1L1</strong> (ezetimibe) and <strong>CETP</strong> carries roughly <strong>70–80% lower odds of dementia</strong> — large effects with tight intervals, in the very targets already known to protect against heart disease. That is the paper's strongest result, and it comes from its <strong>one-sample</strong> arm: ~500,000 people with genotypes, lipids and outcomes all measured in the same individuals (Copenhagen and UK&nbsp;Biobank).</p>
+      <p>That data is application-gated and, for Copenhagen, legally unshareable — so the figure below is <strong>the paper's published numbers, not ours.</strong> It is the headline we set out to chase and could not run. Everything after it is the two-sample arm that public summary statistics <em>do</em> support.</p>
+    </div>
+    <div class="fig" id="fig3"></div>
+    <div class="wrap" style="padding:0">
+      <div class="call"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><span class="ct"><b>Mind the units.</b> These one-sample ORs are per <b>1 mmol/L</b> lower non-HDL; our two-sample ORs are per <b>1 SD</b>. The magnitudes are not comparable — read directions, not sizes.</span></div>
+    </div>
+  </section>
+
+  <section class="wrap reveal">
+    <p class="kicker">Primer</p>
+    <h2>What Mendelian randomization does</h2>
+    <p class="lede">Observational data can only show that low cholesterol and low dementia risk travel together. Mendelian randomization (MR) reaches for cause by using genetic variants as a natural experiment.</p>
+    <p>Because alleles are dealt out randomly at conception — independent of lifestyle, wealth, or later illness — a variant that nudges a trait up or down acts like a lifelong, randomized “assignment” to more or less of that exposure. Such a variant, used as a genetic stand-in for the exposure, is the study's <strong>instrument</strong> (an <em>instrumental variable</em>). If variants that lower non-HDL through a drug-target gene also lower dementia risk, that is causal evidence for inhibiting that target.</p>
+    <p class="def">The estimate is essentially a ratio — <strong>(variant→outcome) ÷ (variant→exposure)</strong> — and those two associations can be measured in the same people, or in two separate studies. That single choice defines what public data can and cannot reproduce.</p>
+
+    <div class="duo">
+      <div class="cardx">
+        <span class="tag no">Not reproducible here</span>
+        <h4>One-sample MR</h4>
+        <ul>
+          <li>Both associations measured in the <b>same</b> individuals</li>
+          <li>Needs individual-level genotype + lipids + outcome</li>
+          <li>Data: Copenhagen (legally unshareable), UK Biobank (application-gated)</li>
+        </ul>
+      </div>
+      <div class="cardx on">
+        <span class="tag yes">Reproducible</span>
+        <h4>Two-sample MR</h4>
+        <ul>
+          <li>The two associations come from <b>two different</b> studies</li>
+          <li>Needs only published <b>summary statistics</b> (β, SE per variant)</li>
+          <li>Data: GLGC × FinnGen — both free to download</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="pipe">
+      <div class="step"><div class="n">Instrument</div><div class="t">cis variant</div><div class="d">SNP inside a drug-target gene</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">Exposure · GLGC</div><div class="t">β on non-HDL</div><div class="d">how much the SNP shifts lipids</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">Outcome · FinnGen</div><div class="t">β on disease</div><div class="d">how much it shifts dementia / IHD</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">Estimate</div><div class="t">odds ratio</div><div class="d">the ratio of the two</div></div>
+    </div>
+  </section>
+
+  <section class="bleed reveal">
+    <div class="wrap" style="padding:0">
+      <p class="kicker">Result · the two-sample arm</p>
+      <h2>Our reproduction against the paper</h2>
+      <p>The fair comparison is <em>our</em> 2SMR against the <em>paper's</em> 2SMR — both per 1&nbsp;SD lower non-HDL. <strong>IHD (ischemic heart disease)</strong> is the positive control: a well-established effect of anti-atherogenic targets that must appear before the dementia estimates are worth reading. Points left of the dashed line (OR&nbsp;&lt;&nbsp;1) mean lower risk.</p>
+    </div>
+    <div class="fig" id="fig1"></div>
+    <div class="wrap" style="padding:0">
+      <p>For IHD the two series sit almost on top of each other — a near-exact reproduction of the control. For all-cause dementia the <em>directions</em> agree everywhere, but our intervals are wider and pull toward the null: our outcome is FinnGen alone (~19k dementia cases) where the paper's 2SMR also pooled UK Biobank and Copenhagen. <strong>NPC1L1 and PCSK9 were non-significant in the paper's 2SMR too</strong>. The largest gap is <strong>CETP</strong> — the same protective direction, but attenuated from the paper's 0.54 to 0.84 and no longer significant; since our CETP→IHD matches the paper closely, that attenuation points at the FinnGen dementia outcome rather than the instrument.</p>
+    </div>
+  </section>
+
+  <section class="wrap reveal">
+    <p class="kicker">Robustness · phase 2</p>
+    <h2>Does the estimate survive being stressed?</h2>
+    <div class="checks">
+      <div class="chk"><div class="h"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 10.5l4 4 8-9"/></svg>Target-specific exposures</div><p>Re-scaling each target on the lipid it primarily acts on (LDL, or logTG for ANGPTL4/LPL) leaves every direction unchanged.</p></div>
+      <div class="chk"><div class="h"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 10.5l4 4 8-9"/></svg>Five estimators agree</div><p>For the multi-SNP genes (PCSK9, CETP), IVW, weighted median, weighted &amp; simple mode, and MR-Egger all coincide within rounding.</p></div>
+      <div class="chk"><div class="h"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 10.5l4 4 8-9"/></svg>Assumptions hold</div><p>MR-Egger intercepts ≈ 0 (little pleiotropy); Cochran's Q is clean except a mild PCSK9→IHD signal.</p></div>
+      <div class="chk"><div class="h"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 10.5l4 4 8-9"/></svg>De-novo instruments</div><p>Re-deriving instruments by the paper's method (cis → GWAS-sig → clump r²≤0.05 → F&gt;10) recovers every named SNP as a genuine cis signal; direction is unchanged.</p></div>
+    </div>
+    <p style="color:var(--ink-2);font-size:.95rem">Instrument strength was never a concern — per-SNP F ranged <b>62–492</b>, all far above the conventional floor of 10.</p>
+  </section>
+
+  <section class="bleed reveal">
+    <div class="wrap" style="padding:0">
+      <p class="kicker">Extension · not the paper's data</p>
+      <h2>Adding cases from bigger AD studies</h2>
+      <div class="call warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#eb6834" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <span class="ct"><b>Extension, not reproduction.</b> Bellenguez 2022 and Kunkle 2019 were <em>not</em> used by the original authors. This asks a different, stronger question — does the signal hold in larger, independent Alzheimer's GWAS? — and is reported separately.</span>
+      </div>
+    </div>
+    <div class="fig" id="fig2"></div>
+    <div class="wrap" style="padding:0">
+      <p>Bigger AD samples sharpened the arm exactly as expected. The null targets became <em>confident</em> nulls (PCSK9 meta 1.02, 0.93–1.13), and <strong>ANGPTL4</strong> crossed into significance in a harmful direction, consistent across all three GWAS.</p>
+      <p><strong>Where the sources disagree, there are concrete reasons — not noise between equals.</strong> The sharpest case is HMGCR: protective/null in FinnGen (0.71) and Bellenguez (0.96) but significantly <em>harmful</em> in Kunkle (2.47). Two structural causes:</p>
+      <div class="checks">
+        <div class="chk"><div class="h">Single-instrument fragility</div><p>HMGCR, NPC1L1, ANGPTL4, LPL each rest on one variant (a Wald ratio), so a cohort's estimate is that lone SNP's outcome association — with no averaging to damp noise, it can flip sign by chance. The multi-SNP genes stay stable across all three sources.</p></div>
+        <div class="chk"><div class="h">Different AD phenotypes</div><p>FinnGen is registry-diagnosed; Kunkle clinically adjudicated; <b>Bellenguez adds by-proxy cases</b> (UK Biobank family history) — a noisier, diluted phenotype. So systematic gaps reflect <em>what “AD” means</em> in each study, which is why we lean on the meta (clean Q) over any one source.</p></div>
+      </div>
+      <p style="font-size:.95rem;color:var(--ink-2)">Precision improved — but ANGPTL4 stays single-instrument, so <em>precision, not validity</em>, is what grew. Treat it as a lead for a multi-instrument follow-up, not a finding.</p>
+    </div>
+  </section>
+
+  <section class="wrap reveal">
+    <p class="kicker">Context · the arm we could not run</p>
+    <h2>Why we did not reproduce the one-sample arm</h2>
+    <p>One-sample MR needs every participant's genotype <em>and</em> lipids <em>and</em> dementia status in one dataset — which exists only in Copenhagen (Danish law forbids sharing) and UK Biobank (application required). Public summary statistics give per-variant β/SE only, which support two-sample MR but not one-sample.</p>
+    <p>That is why the headline figure at the top of this page is the paper's, not ours. With ~500k individuals and a per-mmol/L contrast it carries far more power than a single FinnGen outcome: our two-sample arm reproduces its <em>direction</em>, and matches the well-powered IHD control almost exactly, but cannot on its own deliver the same dementia significance.</p>
+  </section>
+
+  <section class="wrap reveal">
+    <p class="kicker">Fine print</p>
+    <h2>Documented deviations from the paper</h2>
+    <ul class="dev">
+      <li><b>Outcome = FinnGen only</b> — no UK Biobank or Copenhagen, so wider CIs and attenuated dementia effects.</li>
+      <li><b>Per 1 SD</b> lower exposure (GLGC betas are per-SD), not the one-sample arm's per 1 mmol/L.</li>
+      <li><b>logTG sensitivity reported per-SD</b>, not per-halving of triglycerides.</li>
+      <li><b>Unspecified-dementia omitted</b> — no clean standalone FinnGen R12 public phenocode.</li>
+      <li><b>The extension uses AD GWAS the authors did not use</b> — reported separately, never merged into the reproduction.</li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="eyebrow" style="color:var(--muted)">Reproduction provenance</p>
+    <p class="prov">Exposure: GLGC 2021, European, without-UKB (hg19) · Outcome: FinnGen R12 (hg38) · Alzheimer extension: IEU OpenGWAS — Bellenguez 2022, Kunkle 2019 · Instruments harmonized by rsID · Two-sample MR via the <b>TwoSampleMR</b> R package.<br>
+    A workshop tutorial reproducing the method, not the exact numbers, of Nordestgaard&nbsp;et&nbsp;al., <em>Alzheimer's&nbsp;&amp;&nbsp;Dementia</em> 2025.</p>
+  </div>
+</footer>
+
+<div class="tooltip" id="tt" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+  const GENES = ["HMGCR","NPC1L1","PCSK9","ANGPTL4","LPL","CETP"];
+  const SUB = {HMGCR:"statins",NPC1L1:"ezetimibe",PCSK9:"PCSK9i",ANGPTL4:"ANGPTL4",LPL:"LPL",CETP:"CETPi"};
+  const R = (gene,or,lo,hi,p)=>({gene,or,lo,hi,p});
+
+  // ---- data (per 1 SD lower non-HDL unless noted) ----
+  const FIG1 = {
+    unit:"per 1 SD lower non-HDL · OR (log scale)",
+    series:[{id:"ours",label:"This reproduction · GLGC × FinnGen",c:"var(--s1)"},
+            {id:"paper",label:"Paper 2SMR · also UKB + Copenhagen",c:"var(--s2)"}],
+    panels:[
+      {key:"dem",label:"All-cause dementia", rows:{
+        ours:[R("HMGCR",.70,.39,1.25),R("NPC1L1",.83,.23,3.02),R("PCSK9",1.02,.91,1.15),R("ANGPTL4",1.43,.62,3.29),R("LPL",1.70,1.00,2.89),R("CETP",.84,.65,1.09)],
+        paper:[R("HMGCR",.59,.35,.99),R("NPC1L1",.43,.14,1.33),R("PCSK9",1.03,.90,1.17),R("ANGPTL4",1.08,.50,2.32),R("LPL",1.60,1.01,2.55),R("CETP",.54,.37,.78)]}},
+      {key:"ihd",label:"IHD · positive control", rows:{
+        ours:[R("HMGCR",.44,.31,.62),R("NPC1L1",.43,.20,.93),R("PCSK9",.62,.57,.67),R("ANGPTL4",.23,.14,.38),R("LPL",.44,.32,.60),R("CETP",.51,.43,.60)],
+        paper:[R("HMGCR",.41,.30,.55),R("NPC1L1",.65,.34,1.23),R("PCSK9",.63,.58,.68),R("ANGPTL4",.23,.15,.36),R("LPL",.48,.37,.62),R("CETP",.49,.40,.60)]}}
+    ]
+  };
+  const FIG2 = {
+    unit:"per 1 SD lower non-HDL · OR (log scale)",
+    series:[{id:"fin",label:"FinnGen R12 · ~6k cases",c:"var(--s1)"},
+            {id:"kun",label:"Kunkle 2019 · ~22k cases",c:"var(--s2)"},
+            {id:"bel",label:"Bellenguez 2022 · ~39k + proxy",c:"var(--s3)"}],
+    panels:[
+      {key:"ad",label:"Alzheimer's disease · by outcome GWAS", rows:{
+        fin:[R("HMGCR",.71,.34,1.51),R("NPC1L1",.70,.13,3.61),R("PCSK9",.92,.79,1.07),R("ANGPTL4",2.56,.88,7.44),R("LPL",1.47,.75,2.91),R("CETP",.82,.58,1.17)],
+        kun:[R("HMGCR",2.47,1.06,5.75),R("NPC1L1",2.09,.35,12.41),R("PCSK9",1.07,.79,1.44),R("ANGPTL4",3.44,.85,13.98),R("CETP",.91,.60,1.36)],
+        bel:[R("HMGCR",.96,.59,1.56),R("NPC1L1",.49,.18,1.37),R("PCSK9",1.11,.97,1.27),R("ANGPTL4",2.65,1.20,5.87),R("LPL",1.11,.75,1.63),R("CETP",1.13,.93,1.39)]}}
+    ],
+    meta:[R("HMGCR",.88,.58,1.32),R("NPC1L1",.54,.23,1.29),R("PCSK9",1.02,.93,1.13),R("ANGPTL4",2.62,1.38,4.95),R("LPL",1.19,.85,1.66),R("CETP",1.05,.88,1.25)]
+  };
+  const FIG3 = {
+    unit:"per 1 mmol/L lower non-HDL · OR (log scale)",
+    note:"Copenhagen + UK Biobank, individual-level — NOT reproducible here",
+    series:[{id:"paper1",label:"Paper one-sample MR",c:"var(--s3)"}],
+    panels:[
+      {key:"dem",label:"All-cause dementia", rows:{
+        paper1:[R("HMGCR",.24,.18,.31),R("NPC1L1",.18,.12,.25),R("PCSK9",.97,.70,1.35),R("ANGPTL4",1.66,.52,5.36),R("LPL",1.41,.63,3.16),R("CETP",.30,.26,.34)]}},
+      {key:"ihd",label:"IHD · positive control", rows:{
+        paper1:[R("HMGCR",.49,.42,.59),R("NPC1L1",.40,.33,.50),R("PCSK9",.61,.51,.73),R("ANGPTL4",.27,.13,.59),R("LPL",.27,.17,.43),R("CETP",.44,.40,.48)]}}
+    ]
+  };
+
+  const TICKS=[0.1,0.2,0.5,1,2,5,10,20,50];
+  const fmt=v=>v>=10?v.toFixed(0):(v>=1?v.toFixed(1).replace(/\.0$/,""):v.toFixed(1)).replace(/^0(\.\d)/,"$1");
+  const fmtCI=r=>`${r.or.toFixed(2)} (${r.lo.toFixed(2)}–${r.hi.toFixed(2)})`;
+
+  function domainOf(fig){
+    let lo=Infinity,hi=-Infinity;
+    fig.panels.forEach(p=>fig.series.forEach(s=>{const rr=p.rows[s.id]||[];rr.forEach(r=>{lo=Math.min(lo,r.lo);hi=Math.max(hi,r.hi);});}));
+    const d0=[...TICKS].reverse().find(t=>t<=lo) ?? 0.1;
+    const d1=TICKS.find(t=>t>=hi) ?? 50;
+    return [d0,d1];
+  }
+
+  const NS="http://www.w3.org/2000/svg";
+  function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+
+  function panelSVG(panel, fig, dom){
+    const single = fig.panels.length===1;
+    const W= single?560:380, rowH= fig.series.length>1?34:30, padT=6, padB=30, gutL=74, gutR= fig.series.length>1?10:96;
+    const plotL=gutL, plotR=W-gutR, plotW=plotR-plotL;
+    const H=padT + GENES.length*rowH + padB;
+    const l0=Math.log10(dom[0]), l1=Math.log10(dom[1]);
+    const X=or=>plotL+(Math.log10(Math.min(Math.max(or,dom[0]),dom[1]))-l0)/(l1-l0)*plotW;
+    const svg=document.createElementNS(NS,"svg");
+    svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+    svg.setAttribute("role","img");
+    svg.setAttribute("aria-label",panel.label);
+
+    // gridlines + ticks
+    const tk=TICKS.filter(t=>t>=dom[0]&&t<=dom[1]);
+    tk.forEach(t=>{
+      const x=X(t), isRef=(t===1);
+      el("line",{x1:x,x2:x,y1:padT,y2:padT+GENES.length*rowH,
+        stroke:isRef?"var(--ref)":"var(--grid)","stroke-width":isRef?1.4:1,
+        "stroke-dasharray":isRef?"3 3":""},svg);
+      const lab=el("text",{x:x,y:H-padB+18,"text-anchor":"middle",
+        fill:isRef?"var(--ink-2)":"var(--muted)","font-size":10,"font-family":"var(--mono)"},svg);
+      lab.textContent=fmt(t);
+    });
+
+    // rows
+    GENES.forEach((g,gi)=>{
+      const yc=padT+gi*rowH+rowH/2;
+      // gene label
+      const t1=el("text",{x:gutL-10,y:yc-2,"text-anchor":"end",fill:"var(--ink)","font-size":12.5,"font-weight":600,"font-family":"var(--sans)"},svg);
+      t1.textContent=g;
+      const t2=el("text",{x:gutL-10,y:yc+11,"text-anchor":"end",fill:"var(--muted)","font-size":9.5,"font-family":"var(--mono)"},svg);
+      t2.textContent=SUB[g];
+
+      const n=fig.series.length, dodge=n>1?9:0;
+      fig.series.forEach((s,si)=>{
+        const rr=(panel.rows[s.id]||[]).find(r=>r.gene===g);
+        if(!rr) return;
+        const yy=yc + (si-(n-1)/2)*dodge;
+        const xlo=X(rr.lo), xhi=X(rr.hi), xo=X(rr.or);
+        // CI line
+        el("line",{x1:xlo,x2:xhi,y1:yy,y2:yy,stroke:s.c,"stroke-width":2,"stroke-linecap":"round",opacity:.9},svg);
+        // whisker caps
+        el("line",{x1:xlo,x2:xlo,y1:yy-3,y2:yy+3,stroke:s.c,"stroke-width":2,"stroke-linecap":"round",opacity:.9},svg);
+        el("line",{x1:xhi,x2:xhi,y1:yy-3,y2:yy+3,stroke:s.c,"stroke-width":2,"stroke-linecap":"round",opacity:.9},svg);
+        // point (surface ring for overlap separation)
+        el("circle",{cx:xo,cy:yy,r:4.6,fill:s.c,stroke:"var(--card)","stroke-width":1.6},svg);
+        // direct value label (single-series only)
+        if(n===1){
+          const vl=el("text",{x:plotR+8,y:yy+3.5,"text-anchor":"start",fill:"var(--ink-2)","font-size":10.5,"font-family":"var(--mono)"},svg);
+          vl.textContent=fmtCI(rr);
+        }
+        // hit target
+        const hit=el("circle",{cx:xo,cy:yy,r:11,fill:"transparent"},svg);
+        hit.style.cursor="crosshair";
+        hit.dataset.tip=`${g}|${s.label}|${fmtCI(rr)}${rr.p!=null?"|p "+rr.p:""}`;
+      });
+    });
+    return svg;
+  }
+
+  function buildTable(fig){
+    const w=document.createElement("div"); w.className="tblwrap hidden";
+    const tb=document.createElement("table");
+    const heads=["Target",...fig.series.map(s=>s.label.split(" · ")[0])];
+    tb.innerHTML="<thead><tr>"+heads.map((h,i)=>`<th>${h}</th>`).join("")+"</tr></thead>";
+    const body=document.createElement("tbody");
+    fig.panels.forEach(p=>{
+      const hr=document.createElement("tr");
+      hr.innerHTML=`<td colspan="${heads.length}" style="color:var(--muted);font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;padding-top:.8rem">${p.label}</td>`;
+      body.appendChild(hr);
+      GENES.forEach(g=>{
+        const tr=document.createElement("tr");
+        let cells=`<td>${g}</td>`;
+        fig.series.forEach(s=>{const rr=(p.rows[s.id]||[]).find(r=>r.gene===g);cells+=`<td>${rr?fmtCI(rr):"—"}</td>`;});
+        tr.innerHTML=cells; body.appendChild(tr);
+      });
+    });
+    tb.appendChild(body); w.appendChild(tb);
+    return w;
+  }
+
+  function render(id, fig, title, opts){
+    opts=opts||{};
+    const host=document.getElementById(id); if(!host) return;
+    const dom=domainOf(fig);
+    // header
+    const h=document.createElement("div"); h.className="fig-h";
+    h.innerHTML=`<span class="fig-t">${title}</span><span class="fig-u">${fig.unit}</span>`;
+    host.appendChild(h);
+    if(fig.note){const nn=document.createElement("div");nn.className="fig-u";nn.style.color="#eb6834";nn.style.marginTop="-.2rem";nn.textContent=fig.note;host.appendChild(nn);}
+    // legend
+    if(fig.series.length>1){
+      const lg=document.createElement("div"); lg.className="legend";
+      fig.series.forEach(s=>{lg.innerHTML+=`<span class="lg"><span class="sw" style="background:${s.c}"></span>${s.label}</span>`;});
+      host.appendChild(lg);
+    }
+    // panels
+    const pc=document.createElement("div"); pc.className="panels"+(fig.panels.length===1?" one":"");
+    fig.panels.forEach(p=>{
+      const box=document.createElement("div"); box.className="panel";
+      const t=document.createElement("div"); t.className="pt"; t.textContent=p.label; box.appendChild(t);
+      box.appendChild(panelSVG(p,fig,dom));
+      pc.appendChild(box);
+    });
+    host.appendChild(pc);
+    // meta table (fig2)
+    if(fig.meta){
+      const mt=document.createElement("div"); mt.className="tblwrap"; mt.style.marginTop="1rem";
+      let rows=fig.meta.map(r=>`<tr><td>${r.gene}</td><td>${fmtCI(r)}</td><td>${r.gene==='ANGPTL4'?'<span class="g">harmful ✦</span>':'—'}</td></tr>`).join("");
+      mt.innerHTML=`<table><caption>Meta-analysis · FinnGen + Bellenguez (fixed-effect). Kunkle is not pooled — Bellenguez already contains the Kunkle/IGAP samples.</caption><thead><tr><th>Target</th><th>Pooled OR (95% CI)</th><th>note</th></tr></thead><tbody>${rows}</tbody></table>`;
+      host.appendChild(mt);
+    }
+    // tools + table
+    const tools=document.createElement("div"); tools.className="fig-tools";
+    const btn=document.createElement("button"); btn.className="mini"; btn.textContent="Table view"; btn.setAttribute("aria-pressed","false");
+    tools.appendChild(btn); host.appendChild(tools);
+    const tbl=buildTable(fig); host.appendChild(tbl);
+    btn.addEventListener("click",()=>{const on=tbl.classList.toggle("hidden")===false;btn.setAttribute("aria-pressed",String(on));btn.textContent=on?"Hide table":"Table view";});
+    // caption
+    if(opts.cap){const c=document.createElement("p");c.className="fig-cap";c.innerHTML=opts.cap;host.appendChild(c);}
+  }
+
+  render("fig1",FIG1,"Two-sample MR — reproduction vs paper",
+    {cap:"Direction agrees for all six targets; the IHD control reproduces almost exactly. Our dementia estimates are attenuated toward the null, CETP most of all."});
+  render("fig2",FIG2,"Alzheimer's disease — by outcome GWAS (extension)",
+    {cap:"Precision grows with case count. ANGPTL4 is harmful-consistent across all three independent GWAS; the null targets tighten toward 1."});
+  render("fig3",FIG3,"The paper's one-sample MR — shown for context",
+    {cap:"Individual-level Copenhagen + UK Biobank data, per 1 mmol/L lower non-HDL. Compare directions with our two-sample arm, not magnitudes."});
+
+  // ---- tooltip ----
+  const tt=document.getElementById("tt");
+  function showTip(e){
+    const el=e.target.closest("[data-tip]"); if(!el){hideTip();return;}
+    const [g,s,ci,p]=el.dataset.tip.split("|");
+    tt.innerHTML=`<span class="tg">${g}</span> · ${s}<br>OR ${ci}${p?"<br>"+p:""}`;
+    tt.style.opacity="1";
+    const pad=14, w=tt.offsetWidth, h=tt.offsetHeight;
+    let x=e.clientX+pad, y=e.clientY+pad;
+    if(x+w>innerWidth-8) x=e.clientX-w-pad;
+    if(y+h>innerHeight-8) y=e.clientY-h-pad;
+    tt.style.left=x+"px"; tt.style.top=y+"px";
+  }
+  function hideTip(){tt.style.opacity="0";}
+  document.addEventListener("pointermove",e=>{ if(e.target.closest && e.target.closest("[data-tip]")) showTip(e); else hideTip(); });
+  document.addEventListener("pointerdown",e=>{ if(e.target.closest && e.target.closest("[data-tip]")) showTip(e); });
+
+  // ---- theme toggle ----
+  const root=document.documentElement, btn=document.getElementById("themeBtn"),
+        ico=document.getElementById("themeIco"), txt=document.getElementById("themeTxt");
+  function sync(){const dark=matchMedia("(prefers-color-scheme: dark)").matches;
+    const cur=root.dataset.theme|| (dark?"dark":"light");
+    ico.textContent = cur==="dark"?"☾":"☀"; txt.textContent = cur==="dark"?"Dark":"Light";}
+  btn.addEventListener("click",()=>{
+    const dark=matchMedia("(prefers-color-scheme: dark)").matches;
+    const cur=root.dataset.theme|| (dark?"dark":"light");
+    root.dataset.theme = cur==="dark"?"light":"dark"; sync();
+  });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change",sync); sync();
+})();
+</script>

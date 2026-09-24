@@ -1,0 +1,277 @@
+---
+title: "Lipid drug-target genes & dementia risk — a two-sample MR reproduction"
+subtitle: "GLGC (exposure) × FinnGen (outcome), with an OpenGWAS extension"
+author: "Workshop tutorial"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    code_folding: hide
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.align = "center")
+suppressMessages({library(data.table); library(knitr); library(ggplot2)})
+R <- "results"
+have <- function(f) file.exists(file.path(R, f))
+rd   <- function(f, ...) if (have(f)) fread(file.path(R, f), ...) else data.table()
+orci <- function(dt) { dt <- copy(dt)
+  dt[, `OR (95% CI)` := sprintf("%.2f (%.2f–%.2f)", or, or_lci, or_uci)]; dt }
+show <- function(dt, cols, cap) kable(as.data.frame(dt)[, cols, drop = FALSE], caption = cap)
+gene_order <- c("HMGCR","NPC1L1","PCSK9","ANGPTL4","LPL","CETP")
+OUT_LAB <- c(dementia_all = "All-cause dementia", ihd = "IHD (positive control)",
+             ad = "Alzheimer's disease", vascular = "Vascular dementia",
+             unspecified = "Unspecified dementia")
+
+# shared forest-plot helper (log OR, vline at 1, optional colour series + facet)
+forest <- function(d, title, sub = NULL, xlab = "Odds ratio (log scale)",
+                   colour = NULL, facet = NULL) {
+  d <- copy(d); d[, gene := factor(gene, levels = rev(gene_order))]
+  aes_ <- if (is.null(colour)) aes(or, gene) else aes(or, gene, colour = .data[[colour]])
+  pd <- if (is.null(colour)) position_identity() else position_dodge(width = 0.55)
+  p <- ggplot(d, aes_) +
+    geom_vline(xintercept = 1, linetype = 2, colour = "grey60") +
+    geom_errorbar(aes(xmin = lo, xmax = hi), orientation = "y", width = 0.3, position = pd) +
+    geom_point(size = 2.1, position = pd) + scale_x_log10() +
+    labs(title = title, subtitle = sub, x = xlab, y = NULL, colour = NULL) +
+    theme_minimal(base_size = 12) + theme(legend.position = "top")
+  if (!is.null(facet)) p <- p + facet_wrap(as.formula(paste("~", facet)))
+  p
+}
+```
+
+> **What this is.** A workshop reproduction of the *two-sample Mendelian randomization (2SMR)
+> arm* of Nordestgaard et al., *Alzheimer's & Dementia* 2025 — do genetically-proxied lower
+> non-HDL cholesterol, via six lipid drug-target genes, reduce dementia risk?
+>
+> **What this is not.** Not the paper's exact numbers, and not its one-sample / Cox arms. We use
+> only the two **no-request public** datasets (GLGC lipids = exposure; FinnGen dementia and
+> **ischemic heart disease (IHD)** = outcome). See [plan.md](plan.md) and [research.md](research.md).
+
+# The paper's headline result (not ours)
+
+```{r fig-1smr, fig.width=9.5, fig.height=4.6, fig.cap="The paper's ONE-SAMPLE MR results (Copenhagen + UK Biobank individual-level data), per 1 mmol/L lower non-HDL. We could NOT reproduce these — shown for context. NOTE the unit differs from our per-SD two-sample estimates, so magnitudes are not directly comparable; compare directions only."}
+paper1 <- rbindlist(list(
+  data.table(outcome="dementia_all", gene=gene_order,
+    or=c(0.24,0.18,0.97,1.66,1.41,0.30), lo=c(0.18,0.12,0.70,0.52,0.63,0.26), hi=c(0.31,0.25,1.35,5.36,3.16,0.34)),
+  data.table(outcome="ihd", gene=gene_order,
+    or=c(0.49,0.40,0.61,0.27,0.27,0.44), lo=c(0.42,0.33,0.51,0.13,0.17,0.40), hi=c(0.59,0.50,0.73,0.59,0.43,0.48))))
+paper1[, outcome := factor(OUT_LAB[outcome], levels = OUT_LAB[c("dementia_all","ihd")])]
+forest(paper1, "Paper's one-sample MR (NOT reproducible here)",
+       sub = "Copenhagen + UK Biobank, individual-level data",
+       xlab = "Odds ratio per 1 mmol/L lower non-HDL (log scale)", facet = "outcome")
+```
+
+Genetically lower non-HDL cholesterol acting through **HMGCR** (the statin target), **NPC1L1**
+(ezetimibe) and **CETP** carries roughly **70–80% lower odds of dementia** — large effects with tight
+intervals, in the very targets already known to protect against heart disease. That is the paper's
+strongest result, and it comes from its **one-sample** arm: ~500,000 people with genotypes, lipids
+and outcomes all measured in the same individuals. That data is application-gated and, for
+Copenhagen, legally unshareable, so the figure above is **the paper's published numbers, not ours** —
+the headline we set out to chase and could not run (see
+[why](#why-we-did-not-reproduce-the-one-sample-arm)). Everything below is the two-sample arm that
+public summary statistics *do* support; note it is scaled per 1 SD rather than per 1 mmol/L, so
+compare directions, not magnitudes.
+
+# What is Mendelian randomization?
+
+Observational studies can only show that low cholesterol and low dementia risk *travel together*;
+they can't tell apart cause, reverse causation, and confounding. **Mendelian randomization (MR)**
+gets at causation by using **genetic variants as a natural experiment.** Because alleles are
+allocated randomly at conception — independently of lifestyle, wealth, or later illness — a variant
+that nudges a trait up or down acts like a lifelong, randomized "assignment" to more or less of that
+exposure. Such a variant, used as a genetic stand-in for the exposure, is called an **instrument**
+(or *instrumental variable*) — the tool the analysis leans on in place of a randomized treatment.
+If variants that lower non-HDL via a drug-target gene also lower dementia risk, that is causal
+evidence for *inhibiting that target*.
+
+MR rests on three instrument assumptions: **(1) relevance** — the variant really affects the
+exposure (we check F ≫ 10); **(2) independence** — no confounding of the variant–outcome link;
+**(3) exclusion restriction** — the variant affects the outcome *only* through the exposure (we
+probe this with pleiotropy tests). Using *cis* variants inside the drug-target gene keeps the
+instrument tightly tied to that one protein, which is what makes it a good model of the drug.
+
+## One-sample vs two-sample MR
+
+The estimate is essentially a ratio, **(SNP→outcome) ÷ (SNP→exposure)**, and the two associations
+can come from the same people or from two different studies:
+
+```{r mr-table, echo=FALSE}
+kable(data.frame(
+  Feature = c("SNP→exposure and SNP→outcome measured in…", "Data needed", "Access",
+              "This paper's arms", "Reproducible here?"),
+  `One-sample MR` = c("the **same** individuals",
+    "individual-level genotypes + lipids + outcome", "application / restricted",
+    "Copenhagen (CCHS+CGPS), UK Biobank", "**No**"),
+  `Two-sample MR` = c("**two different** studies",
+    "published **summary statistics** only", "free download",
+    "GLGC × {FinnGen, UKB, Copenhagen}", "**Yes** (GLGC × FinnGen)"),
+  check.names = FALSE), caption = "One-sample vs two-sample MR")
+```
+
+Two-sample MR is what public data allows — we only ever need each variant's published β and SE, not
+the raw participants. That single fact defines the whole scope of this reproduction (see
+[why we did not reproduce the one-sample arm](#why-we-did-not-reproduce-the-one-sample-arm)).
+
+# The design in one paragraph
+
+For each of six targets — **HMGCR** (statins), **NPC1L1** (ezetimibe), **PCSK9**, **ANGPTL4**,
+**LPL**, **CETP** — we take *cis* instrument SNPs, read their **lipid** effect from GLGC and their
+**disease** effect from FinnGen, harmonize to a common allele, and form the MR ratio (Wald ratio for
+1 SNP; weighted median for ≥3). **IHD is the positive control**: a well-established effect of
+anti-atherogenic targets that must appear before we trust the dementia estimates. All effects are
+**per 1 SD lower** non-HDL.
+
+```{r load}
+pe   <- rd("mr_phase2_point_estimates.csv")
+est  <- rd("mr_phase2_estimators.csv")
+diag <- rd("mr_phase2_diagnostics.csv")
+dn   <- rd("instruments_denovo.csv")
+ad   <- rd("mr_phase3_ad_multisource.csv")
+meta <- rd("mr_phase3_meta.csv")
+main <- pe[exposure_trait == "nonHDL"]
+```
+
+# Positive control: does IHD behave?
+
+```{r pos-control, results='asis'}
+ihd <- main[outcome == "ihd" & !is.na(or)]
+prot <- ihd[gene %in% c("HMGCR","LPL","PCSK9","CETP") & or < 1, gene]
+cat(sprintf("**Anti-atherogenic targets protective for IHD (OR<1):** %s — %s\n",
+            paste(prot, collapse = ", "),
+            if (length(prot) >= 3) "**positive control PASSES**, so the dementia estimates are interpretable."
+            else "**CHECK harmonization.**"))
+```
+
+# Reproduction vs the paper — the two-sample arm
+
+The fair comparison is *our* 2SMR against the *paper's* 2SMR (both per 1 SD lower non-HDL). Rather
+than tabulate mostly-null numbers, we plot them side by side for the two outcomes the paper reports
+per target. Points left of 1 = protective.
+
+```{r fig-2smr, fig.width=9.5, fig.height=4.6, fig.cap="Two-sample MR, per 1 SD lower non-HDL: this reproduction (GLGC×FinnGen) vs the paper's meta-analyzed 2SMR (which also pooled UK Biobank + Copenhagen). Direction agrees for all six targets; our dementia estimates are attenuated toward the null, CETP most of all."}
+paper2 <- rbindlist(list(
+  data.table(outcome="dementia_all", gene=gene_order,
+    or=c(0.59,0.43,1.03,1.08,1.60,0.54), lo=c(0.35,0.14,0.90,0.50,1.01,0.37), hi=c(0.99,1.33,1.17,2.32,2.55,0.78)),
+  data.table(outcome="ihd", gene=gene_order,
+    or=c(0.41,0.65,0.63,0.23,0.48,0.49), lo=c(0.30,0.34,0.58,0.15,0.37,0.40), hi=c(0.55,1.23,0.68,0.36,0.62,0.60))))
+paper2[, series := "Paper 2SMR (also UKB+Copenhagen)"]
+ours2 <- main[outcome %in% c("dementia_all","ihd"), .(outcome, gene, or, lo=or_lci, hi=or_uci)][, series := "This reproduction (FinnGen)"]
+cmp <- rbind(paper2, ours2)[!is.na(or)]
+cmp[, outcome := factor(OUT_LAB[outcome], levels = OUT_LAB[c("dementia_all","ihd")])]
+forest(cmp, "Two-sample MR: reproduction vs paper", colour = "series", facet = "outcome")
+```
+
+**Reading it.** For IHD the two series sit almost on top of each other (near-exact reproduction of
+the positive control). For all-cause dementia the *directions* match everywhere, but our CIs are
+wider and shrink toward the null — expected, because our outcome is FinnGen alone (~19k dementia
+cases) while the paper's 2SMR pooled UKB + Copenhagen too. Note **NPC1L1 and PCSK9 were also
+non-significant in the paper's 2SMR**. The largest gap is **CETP** — same protective direction, but
+attenuated from the paper's 0.54 to
+`r sprintf("%.2f", main[outcome=='dementia_all'&gene=='CETP', or])` and no longer significant. Since
+our CETP→IHD matches the paper closely, that attenuation points at the FinnGen dementia outcome rather
+than the instrument.
+
+```{r fig-subtypes, fig.width=12, fig.height=3.4, fig.cap="Our dementia-subtype estimates (FinnGen only; the paper reported subtypes in its Figure 4). Wide CIs reflect small case counts (~6k AD, ~2.7k vascular, ~4.4k unspecified)."}
+subd <- main[outcome %in% c("ad","vascular","unspecified") & !is.na(or), .(outcome, gene, or, lo=or_lci, hi=or_uci)]
+subd[, outcome := factor(OUT_LAB[outcome], levels = OUT_LAB[c("ad","vascular","unspecified")])]
+forest(subd, "Dementia subtypes (this reproduction)", facet = "outcome")
+```
+
+# Robustness (Phase 2)
+
+**Target-specific exposures.** Re-running each target on the trait it primarily acts on (LDL for the
+LDL-lowering targets, logTG for ANGPTL4/LPL) leaves directions unchanged; for the single-SNP Wald
+targets the *p-value is invariant* to the exposure trait (only the OR rescales).
+
+**Estimator agreement (PCSK9, CETP).** All five estimators — IVW, weighted median, weighted mode,
+simple mode, MR-Egger — agree within rounding for both multi-SNP genes; MR-Egger is appropriately
+unstable at 3 SNPs (very wide CIs) and is shown for completeness rather than inference.
+
+**Assumption checks.** Pleiotropy and heterogeneity are clean except a mild PCSK9→IHD Q signal:
+
+```{r diagnostics}
+if (nrow(diag)) show(diag, c("gene","outcome","n_snp","egger_intercept","egger_intercept_p","Q","Q_pval"),
+  "MR-Egger intercept ≈ 0 (P>0.05) → little directional pleiotropy; Cochran's Q P>0.05 → no excess heterogeneity")
+```
+
+**De-novo instrument selection.** Replacing the hardcoded rsIDs with the paper's *method* (cis window
+→ GWAS-significant → LD-clump r²≤0.05 on a local 1000G EUR panel → F>10): every paper-named SNP is a
+genuine GWAS-significant cis variant (`named_sig` = `named_n` for all six); some survive as clump
+leads, others are absorbed into a stronger-lead clump. The de-novo MR agrees in direction with the
+curated instruments, and IHD stays protective.
+
+```{r denovo}
+if (nrow(dn)) show(dn, c("gene","n_cand","n_clumped","named_n","named_sig","named_lead","note"),
+                   "De-novo selection vs the paper's named instruments")
+```
+
+# Extension: bigger AD GWAS via OpenGWAS (NOT reproduction)
+
+> **⚠** Bellenguez 2022 and Kunkle 2019 were **not** used by the original authors. This asks a
+> *different, stronger* question — does the GLGC→AD signal hold in larger, independent AD GWAS? —
+> and is reported separately from the reproduction.
+
+```{r fig-phase3, eval=nrow(ad)>0, fig.width=8.5, fig.height=4.2, fig.cap="Alzheimer's disease, per 1 SD lower non-HDL, by outcome GWAS. Precision grows with case count (FinnGen ~6k → Kunkle ~22k → Bellenguez ~39k+proxy)."}
+adp <- ad[!is.na(or), .(gene, series = source, or, lo = or_lci, hi = or_uci)]
+adp[, series := factor(series, levels = c("FinnGen R12","Kunkle 2019","Bellenguez 2022"))]
+forest(adp, "AD by outcome source (extension)", colour = "series")
+```
+
+```{r meta}
+if (nrow(meta)) show(orci(meta), c("gene","k_sources","OR (95% CI)","pval","Q_pval","sources"),
+  "Meta-analysis: FinnGen + Bellenguez (fixed-effect). Kunkle NOT pooled — Bellenguez already contains the Kunkle/IGAP samples.")
+```
+
+Adding cases sharpened the AD arm: the null targets became *confident* nulls (PCSK9 meta
+`r if(nrow(meta)) sprintf("%.2f (%.2f–%.2f)", meta[gene=='PCSK9',or], meta[gene=='PCSK9',or_lci], meta[gene=='PCSK9',or_uci])`),
+and **ANGPTL4** crossed into significance (harmful direction, consistent across all three GWAS). But
+ANGPTL4 remains single-instrument, so precision — not validity — is what improved; its OR is also
+scale-sensitive. Treat it as a lead for a multi-instrument follow-up, not a finding.
+
+**Where the sources disagree, there are concrete reasons — it is not random noise between equals.**
+The sharpest example is **HMGCR**: protective/null in FinnGen (0.71) and Bellenguez (0.96) but
+significantly *harmful* in Kunkle (2.47, p=0.04). Two structural explanations, not biology:
+
+1. **Single-instrument fragility.** HMGCR, NPC1L1, ANGPTL4 and LPL each rest on *one* variant
+   (a Wald ratio), so a cohort's estimate is entirely that SNP's association with AD in that
+   dataset — there is no averaging to damp sampling noise, and a single-SNP estimate can flip sign
+   between cohorts by chance. The multi-SNP genes (PCSK9, CETP) are correspondingly stable across
+   all three sources. So a lone-SNP flip like HMGCR-in-Kunkle is expected imprecision, not a real
+   contradiction.
+2. **Different AD phenotypes.** FinnGen is registry-diagnosed (Finnish ICD codes); Kunkle is
+   clinically-adjudicated case–control; **Bellenguez adds by-proxy cases** (UK Biobank participants
+   labelled by *family history*, not their own diagnosis). Proxy-AD is a noisier, diluted phenotype,
+   so systematic gaps between Bellenguez and FinnGen partly reflect *what "AD" means* in each
+   study, not just sample size. This is also why we lean on the FinnGen+Bellenguez **meta** (whose
+   Cochran's Q shows no significant disagreement) rather than any single source.
+
+# Why we did not reproduce the one-sample arm
+
+One-sample MR needs **individual-level** data — every participant's genotype *and* lipids *and*
+dementia status in one dataset — which exists only in Copenhagen (CCHS+CGPS; Danish law forbids
+public sharing) and UK Biobank (application required). Public **summary statistics** give only
+per-variant β/SE, which support two-sample MR but not one-sample. So the one-sample arm is
+permanently out of reach here; the paper's published one-sample results are the headline figure at the
+[top of this report](#the-papers-headline-result-not-ours).
+
+That arm is where the paper's dementia conclusions are strongest — HMGCR, NPC1L1, and CETP are
+clearly protective with tight intervals — because ~500k individuals and a per-mmol/L contrast give
+far more power than our single FinnGen summary dataset. Our two-sample arm reproduces the *direction*
+of these, and matches the well-powered IHD control closely, but cannot on its own deliver the same
+dementia significance.
+
+# Documented deviations from the paper
+
+- **Outcome = FinnGen only** (no UK Biobank / Copenhagen) → wider CIs, attenuated dementia effects.
+- **Per 1 SD** lower exposure (GLGC betas are per-SD), not the one-sample arm's per 1 mmol/L.
+- **logTG sensitivity reported per-SD**, not per-halving of triglycerides.
+- **De-novo instrument selection** not re-run in the latest pass (needs the local 1000G LD panel).
+- **Phase 3 uses AD GWAS the authors did not use** — an extension, reported separately.
+
+```{r sessioninfo}
+sessionInfo()
+```

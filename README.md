@@ -19,8 +19,10 @@ The workshop runs in two halves, roughly 45 minutes each.
 ## Repository layout
 
 ```
-slides/   Agentic-AI-slides.pdf   — the presentation
-demo/     the demo materials
+slides/   Agentic-AI-slides.pdf                     — session 1 presentation
+          Reproducing-a-published-paper-slides.pdf  — session 2 demo slides
+demo/     session 2 demo: a Mendelian randomization paper reproduced with Claude Code
+          (code, prompts, outputs, and the interactive deck in demo/workshop/)
 ```
 
 ---
